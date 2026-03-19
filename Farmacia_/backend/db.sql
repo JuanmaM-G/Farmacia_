@@ -1,7 +1,10 @@
-
 CREATE DATABASE IF NOT EXISTS farmacia;
-USE farmacia;
+create user if not exists 'recu'@'localhost' identified by 'password';
+GRANT ALL PRIVILEGES ON farmacia.* TO 'recu'@'localhost';
 
+FLUSH PRIVILEGES;
+
+USE farmacia;
 
 CREATE TABLE medicamento (
     id_medicamento INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
