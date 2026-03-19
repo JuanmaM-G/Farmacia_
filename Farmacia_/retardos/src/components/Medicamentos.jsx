@@ -7,8 +7,6 @@ const Medicamentos = () => {
         fetch("http://localhost:5000/api/Medicamento")
             .then(response => response.json())
             .then(data => {
-                // AQUÍ es donde la consola te dirá qué llegó de la base de datos
-                console.log("Datos recibidos de Flask:", data); 
                 setMedicamentos(data);
             })
             .catch(error => console.error("Error con los datos de medicamentos", error));
