@@ -43,7 +43,6 @@ def add_medicamento():
     tipo   = data.get('tipo')
     precio = data.get('precio')
 
-    # Validación básica de campos obligatorios
     if not nombre or not tipo or precio is None:
         return jsonify({'error': 'nombre, tipo y precio son obligatorios'}), 400
 
@@ -59,6 +58,51 @@ def add_medicamento():
         cursor.close()
         conn.close()
         return jsonify({'message': 'Medicamento agregado', 'id_medicamento': nuevo_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===================================
+
+# PUT — Actualizar un medicamento por id
+@app.route('/api/Medicamento/<int:id>', methods=['PUT'])
+def update_medicamento(id):
+    data = request.get_json()
+
+    nombre = data.get('nombre')
+    marca  = data.get('marca')
+    tipo   = data.get('tipo')
+    precio = data.get('precio')
+
+    if not nombre or not tipo or precio is None:
+        return jsonify({'error': 'nombre, tipo y precio son obligatorios'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'UPDATE medicamento SET nombre=%s, marca=%s, tipo=%s, precio=%s WHERE id_medicamento=%s',
+            (nombre, marca, tipo, precio, id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Medicamento actualizado'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ===================================
+
+# DELETE — Eliminar un medicamento por id
+@app.route('/api/Medicamento/<int:id>', methods=['DELETE'])
+def delete_medicamento(id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM medicamento WHERE id_medicamento=%s', (id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({'message': 'Medicamento eliminado'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
