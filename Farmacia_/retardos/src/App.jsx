@@ -1,10 +1,14 @@
-
-// import Medicamentos from './components/Medicamentos';
 import Medicamentos from "./components/medicamentos";
+import AG_medi from "./components/AG_medi"
 function App() {
   return (
 
+    <>
+
       <Medicamentos />
+      <AG_medi />
+
+    </>
 
   )
 }
