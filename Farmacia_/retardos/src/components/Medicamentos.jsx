@@ -3,10 +3,16 @@ import Edit_medi from "./Edit_medi";
 
 const Medicamentos = () => {
     const [medicamentos, setMedicamentos] = useState([]);
-    const [medicamentoEditar, setMedicamentoEditar] = useState(null); // null = no se está editando
+    const [medicamentoEditar, setMedicamentoEditar] = useState(null);
+    const [busqueda, setBusqueda] = useState("");               
 
-    const fetchMedicamentos = () => {
-        fetch("http://localhost:5000/api/Medicamento")
+    
+    const fetchMedicamentos = (marca = "") => {
+        const url = marca
+            ? `http://localhost:5000/api/Medicamento?marca=${encodeURIComponent(marca)}`
+            : "http://localhost:5000/api/Medicamento";
+
+        fetch(url)
             .then(response => response.json())
             .then(data => setMedicamentos(data))
             .catch(error => console.error("Error con los datos de medicamentos", error));
@@ -16,7 +22,13 @@ const Medicamentos = () => {
         fetchMedicamentos();
     }, []);
 
-    // Eliminar medicamento por id
+    
+    const handleBusqueda = (e) => {
+        const valor = e.target.value;
+        setBusqueda(valor);
+        fetchMedicamentos(valor);
+    };
+
     const handleEliminar = async (id) => {
         try {
             const response = await fetch(`http://localhost:5000/api/Medicamento/${id}`, {
@@ -24,7 +36,6 @@ const Medicamentos = () => {
             });
 
             if (response.ok) {
-                // Actualiza la lista sin recargar la página
                 setMedicamentos(medicamentos.filter(m => m.id_medicamento !== id));
             } else {
                 console.error("Error al eliminar el medicamento");
@@ -34,14 +45,13 @@ const Medicamentos = () => {
         }
     };
 
-    // Si hay un medicamento seleccionado para editar, muestra el formulario de edición
     if (medicamentoEditar) {
         return (
             <Edit_medi
                 medicamento={medicamentoEditar}
                 onVolver={() => {
-                    setMedicamentoEditar(null); // Regresa a la tabla
-                    fetchMedicamentos();         // Refresca los datos
+                    setMedicamentoEditar(null);
+                    fetchMedicamentos(busqueda); 
                 }}
             />
         );
@@ -50,6 +60,15 @@ const Medicamentos = () => {
     return (
         <div>
             <h1>Medicamentos</h1>
+
+       
+            <input
+                type="text"
+                placeholder="Buscar por marca..."
+                value={busqueda}
+                onChange={handleBusqueda}
+            />
+
             <table>
                 <thead>
                     <tr>
@@ -68,7 +87,6 @@ const Medicamentos = () => {
                             <td>{medica.tipo}</td>
                             <td>{medica.precio}</td>
                             <td>
-                                {/* Guarda el medicamento seleccionado y cambia la vista */}
                                 <button onClick={() => setMedicamentoEditar(medica)}>
                                     Editar
                                 </button>

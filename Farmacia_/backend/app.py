@@ -20,16 +20,29 @@ def get_db_connection():
     return mysql.connector.connect(**db_config)
 # ===================================
 
-# GET — Obtener todos los medicamentos
+# GET — Obtener medicamentos, con filtro opcional por marca
+# /api/Medicamento            → trae todos
+# /api/Medicamento?marca=Bayer → filtra por marca
 @app.route('/api/Medicamento', methods=['GET'])
 def get_medicamento():
+    marca = request.args.get('marca', '')   # ← NUEVO: lee el query param
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute('SELECT * FROM medicamento')
-    medicamento = cursor.fetchall()
+
+    if marca:
+        # ← NUEVO: búsqueda parcial con LIKE, %s protege contra SQL Injection
+        cursor.execute(
+            'SELECT * FROM medicamento WHERE marca LIKE %s',
+            (f'%{marca}%',)
+        )
+    else:
+        cursor.execute('SELECT * FROM medicamento')
+
+    medicamentos = cursor.fetchall()
     cursor.close()
     conn.close()
-    return jsonify(medicamento)
+    return jsonify(medicamentos)
 
 # ===================================
 
