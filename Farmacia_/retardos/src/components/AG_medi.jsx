@@ -1,6 +1,26 @@
 import { useState } from "react";
 
-const AG_medi = () => {
+const AG_medi = async (response) => {
+    const data = await response.json();
+
+    if (response.ok) {
+        return { tipo: "exito", texto: "Medicamento agregado correctamente." };
+    }
+
+    if (response.status === 400) {
+        // El backend devuelve lista de errores de validación
+        const detalle = data.errores ? data.errores.join(" | ") : data.error;
+        return { tipo: "error", texto: `Datos inválidos: ${detalle}` };
+    }
+
+    if (response.status === 500) {
+        return { tipo: "error", texto: "Error interno del servidor. Intenta de nuevo más tarde." };
+    }
+
+    return { tipo: "error", texto: `Error inesperado (código ${response.status}).` };
+};
+
+const AgregarMedicamento = () => {
     const [formData, setFormData] = useState({
         nombre: "",
         marca: "",
@@ -8,19 +28,13 @@ const AG_medi = () => {
         precio: ""
     });
 
-
     const [errores, setErrores] = useState({});
     const [mensaje, setMensaje] = useState(null);
+    const [cargando, setCargando] = useState(false); // Evita doble envío
 
-    // =====================================================
-    // VALIDACIÓN FRONTEND
-    // Retorna un objeto con los errores encontrados.
-    // Si está vacío, no hay errores.
-    // =====================================================
     const validar = (datos) => {
         const nuevosErrores = {};
 
-        // nombre: obligatorio, solo letras y espacios, mínimo 2 caracteres
         if (!datos.nombre.trim()) {
             nuevosErrores.nombre = "El nombre es obligatorio.";
         } else if (datos.nombre.trim().length < 2) {
@@ -29,12 +43,10 @@ const AG_medi = () => {
             nuevosErrores.nombre = "El nombre solo puede contener letras.";
         }
 
-        // marca: opcional, pero si se ingresa debe ser solo letras
         if (datos.marca.trim() && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(datos.marca.trim())) {
             nuevosErrores.marca = "La marca solo puede contener letras.";
         }
 
-        // tipo: obligatorio, debe ser uno de los valores del ENUM
         const tiposValidos = ["Pastilla", "Jarabe", "Crema", "Gotas", "Inhalador"];
         if (!datos.tipo) {
             nuevosErrores.tipo = "El tipo es obligatorio.";
@@ -42,7 +54,6 @@ const AG_medi = () => {
             nuevosErrores.tipo = "Selecciona un tipo válido.";
         }
 
-        // precio: obligatorio, debe ser número positivo con máximo 2 decimales
         if (datos.precio === "") {
             nuevosErrores.precio = "El precio es obligatorio.";
         } else if (isNaN(datos.precio) || Number(datos.precio) < 0) {
@@ -57,21 +68,20 @@ const AG_medi = () => {
     const handleChange = (e) => {
         const nuevoFormData = { ...formData, [e.target.name]: e.target.value };
         setFormData(nuevoFormData);
-
-
-        const nuevosErrores = validar(nuevoFormData);
-        setErrores(nuevosErrores);
+        setErrores(validar(nuevoFormData));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Valida antes de enviar
         const erroresFinales = validar(formData);
         if (Object.keys(erroresFinales).length > 0) {
             setErrores(erroresFinales);
-            return; // Detiene el envío si hay errores
+            return;
         }
+
+        setCargando(true);
+        setMensaje(null);
 
         try {
             const response = await fetch("http://localhost:5000/api/Medicamento", {
@@ -80,22 +90,24 @@ const AG_medi = () => {
                 body: JSON.stringify(formData)
             });
 
-            const data = await response.json();
+            const resultado = await manejarRespuesta(response);
+            setMensaje(resultado);
 
-            if (response.ok) {
-                setMensaje({ tipo: "exito", texto: "Medicamento agregado correctamente." });
+            if (resultado.tipo === "exito") {
                 setFormData({ nombre: "", marca: "", tipo: "", precio: "" });
                 setErrores({});
-            } else {
-                // Muestra el error que devuelve el backend
-                setMensaje({ tipo: "error", texto: data.error || "Error al agregar medicamento." });
             }
+
         } catch (error) {
-            console.error("Error en la petición:", error);
-            setMensaje({ tipo: "error", texto: "No se pudo conectar con el servidor." });
+            // fetch lanza excepción solo cuando no hay conexión al servidor
+            setMensaje({
+                tipo: "error",
+                texto: "No se pudo conectar con el servidor. Verifica tu conexión."
+            });
+        } finally {
+            setCargando(false);
         }
     };
-
 
     const estiloError = { color: "red", fontSize: "0.85rem", marginTop: "2px" };
 
@@ -121,7 +133,6 @@ const AG_medi = () => {
                             value={formData.nombre}
                             onChange={handleChange}
                         />
-                        {/* Muestra error solo si existe para este campo */}
                         {errores.nombre && <p style={estiloError}>{errores.nombre}</p>}
                     </div>
 
@@ -169,7 +180,11 @@ const AG_medi = () => {
                         {errores.precio && <p style={estiloError}>{errores.precio}</p>}
                     </div>
 
-                    <button type="submit">Agregar</button>
+                    {/* Deshabilita el botón mientras se envía para evitar doble submit */}
+                    <button type="submit" disabled={cargando}>
+                        {cargando ? "Guardando..." : "Agregar"}
+                    </button>
+
                 </form>
             </div>
         </>
