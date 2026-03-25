@@ -1,160 +1,107 @@
 import { useState } from "react";
 
-const AG_medi = async (response) => {
+
+const manejarRespuesta = async (response) => {
     const data = await response.json();
-
-    if (response.ok) {
+    if (response.ok)
         return { tipo: "exito", texto: "Medicamento agregado correctamente." };
-    }
-
     if (response.status === 400) {
-        // El backend devuelve lista de errores de validación
         const detalle = data.errores ? data.errores.join(" | ") : data.error;
         return { tipo: "error", texto: `Datos inválidos: ${detalle}` };
     }
-
-    if (response.status === 500) {
+    if (response.status === 500)
         return { tipo: "error", texto: "Error interno del servidor. Intenta de nuevo más tarde." };
-    }
-
     return { tipo: "error", texto: `Error inesperado (código ${response.status}).` };
 };
 
-const AgregarMedicamento = () => {
-    const [formData, setFormData] = useState({
-        nombre: "",
-        marca: "",
-        tipo: "",
-        precio: ""
-    });
-
+const AG_medi = () => {
+    const [formData, setFormData] = useState({ nombre: "", marca: "", tipo: "", precio: "" });
     const [errores, setErrores] = useState({});
     const [mensaje, setMensaje] = useState(null);
-    const [cargando, setCargando] = useState(false); // Evita doble envío
+    const [cargando, setCargando] = useState(false);
 
     const validar = (datos) => {
-        const nuevosErrores = {};
-
-        if (!datos.nombre.trim()) {
-            nuevosErrores.nombre = "El nombre es obligatorio.";
-        } else if (datos.nombre.trim().length < 2) {
-            nuevosErrores.nombre = "El nombre debe tener al menos 2 caracteres.";
-        } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(datos.nombre.trim())) {
-            nuevosErrores.nombre = "El nombre solo puede contener letras.";
-        }
-
-        if (datos.marca.trim() && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(datos.marca.trim())) {
-            nuevosErrores.marca = "La marca solo puede contener letras.";
-        }
-
+        const e = {};
+        if (!datos.nombre.trim()) e.nombre = "El nombre es obligatorio.";
+        else if (datos.nombre.trim().length < 2) e.nombre = "Mínimo 2 caracteres.";
+        else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(datos.nombre.trim())) e.nombre = "Solo puede contener letras.";
+        if (datos.marca.trim() && !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(datos.marca.trim())) e.marca = "Solo puede contener letras.";
         const tiposValidos = ["Pastilla", "Jarabe", "Crema", "Gotas", "Inhalador"];
-        if (!datos.tipo) {
-            nuevosErrores.tipo = "El tipo es obligatorio.";
-        } else if (!tiposValidos.includes(datos.tipo)) {
-            nuevosErrores.tipo = "Selecciona un tipo válido.";
-        }
-
-        if (datos.precio === "") {
-            nuevosErrores.precio = "El precio es obligatorio.";
-        } else if (isNaN(datos.precio) || Number(datos.precio) < 0) {
-            nuevosErrores.precio = "El precio debe ser un número positivo.";
-        } else if (!/^\d+(\.\d{1,2})?$/.test(datos.precio)) {
-            nuevosErrores.precio = "El precio puede tener máximo 2 decimales.";
-        }
-
-        return nuevosErrores;
+        if (!datos.tipo) e.tipo = "El tipo es obligatorio.";
+        else if (!tiposValidos.includes(datos.tipo)) e.tipo = "Selecciona un tipo válido.";
+        if (datos.precio === "") e.precio = "El precio es obligatorio.";
+        else if (isNaN(datos.precio) || Number(datos.precio) < 0) e.precio = "Debe ser un número positivo.";
+        else if (!/^\d+(\.\d{1,2})?$/.test(datos.precio)) e.precio = "Máximo 2 decimales.";
+        return e;
     };
 
     const handleChange = (e) => {
-        const nuevoFormData = { ...formData, [e.target.name]: e.target.value };
-        setFormData(nuevoFormData);
-        setErrores(validar(nuevoFormData));
+        const nuevo = { ...formData, [e.target.name]: e.target.value };
+        setFormData(nuevo);
+        setErrores(validar(nuevo));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         const erroresFinales = validar(formData);
-        if (Object.keys(erroresFinales).length > 0) {
-            setErrores(erroresFinales);
-            return;
-        }
-
+        if (Object.keys(erroresFinales).length > 0) { setErrores(erroresFinales); return; }
         setCargando(true);
         setMensaje(null);
-
         try {
             const response = await fetch("http://localhost:5000/api/Medicamento", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
-
             const resultado = await manejarRespuesta(response);
             setMensaje(resultado);
-
             if (resultado.tipo === "exito") {
                 setFormData({ nombre: "", marca: "", tipo: "", precio: "" });
                 setErrores({});
             }
-
-        } catch (error) {
-            // fetch lanza excepción solo cuando no hay conexión al servidor
-            setMensaje({
-                tipo: "error",
-                texto: "No se pudo conectar con el servidor. Verifica tu conexión."
-            });
+        } catch {
+            setMensaje({ tipo: "error", texto: "No se pudo conectar con el servidor. Verifica tu conexión." });
         } finally {
             setCargando(false);
         }
     };
 
-    const estiloError = { color: "red", fontSize: "0.85rem", marginTop: "2px" };
-
     return (
-        <>
-            <div>
-                <h1>Agregar Medicamento</h1>
+        <div className="pagina">
+            <h1>Agregar Medicamento</h1>
 
+            <div className="formulario">
                 {mensaje && (
-                    <p style={{ color: mensaje.tipo === "exito" ? "green" : "red" }}>
-                        {mensaje.texto}
-                    </p>
+                    <div className={`mensaje ${mensaje.tipo}`}>{mensaje.texto}</div>
                 )}
 
                 <form onSubmit={handleSubmit}>
-
-                    <div>
-                        <label htmlFor="nombre">Nombre:</label>
+                    <div className="campo">
+                        <label htmlFor="nombre">Nombre</label>
                         <input
-                            type="text"
-                            id="nombre"
-                            name="nombre"
-                            value={formData.nombre}
-                            onChange={handleChange}
+                            type="text" id="nombre" name="nombre"
+                            value={formData.nombre} onChange={handleChange}
+                            className={errores.nombre ? "error-input" : ""}
                         />
-                        {errores.nombre && <p style={estiloError}>{errores.nombre}</p>}
+                        {errores.nombre && <span className="error-msg">{errores.nombre}</span>}
                     </div>
 
-                    <div>
-                        <label htmlFor="marca">Marca:</label>
+                    <div className="campo">
+                        <label htmlFor="marca">Marca</label>
                         <input
-                            type="text"
-                            id="marca"
-                            name="marca"
-                            value={formData.marca}
-                            onChange={handleChange}
+                            type="text" id="marca" name="marca"
+                            value={formData.marca} onChange={handleChange}
+                            className={errores.marca ? "error-input" : ""}
                         />
-                        {errores.marca && <p style={estiloError}>{errores.marca}</p>}
+                        {errores.marca && <span className="error-msg">{errores.marca}</span>}
                     </div>
 
-                    <div>
-                        <label htmlFor="tipo">Tipo:</label>
+                    <div className="campo">
+                        <label htmlFor="tipo">Tipo</label>
                         <select
-                            id="tipo"
-                            name="tipo"
-                            value={formData.tipo}
-                            onChange={handleChange}
+                            id="tipo" name="tipo"
+                            value={formData.tipo} onChange={handleChange}
+                            className={errores.tipo ? "error-input" : ""}
                         >
                             <option value="">-- Selecciona un tipo --</option>
                             <option value="Pastilla">Pastilla</option>
@@ -163,31 +110,28 @@ const AgregarMedicamento = () => {
                             <option value="Gotas">Gotas</option>
                             <option value="Inhalador">Inhalador</option>
                         </select>
-                        {errores.tipo && <p style={estiloError}>{errores.tipo}</p>}
+                        {errores.tipo && <span className="error-msg">{errores.tipo}</span>}
                     </div>
 
-                    <div>
-                        <label htmlFor="precio">Precio:</label>
+                    <div className="campo">
+                        <label htmlFor="precio">Precio</label>
                         <input
-                            type="number"
-                            id="precio"
-                            name="precio"
-                            value={formData.precio}
-                            onChange={handleChange}
-                            min="0"
-                            step="0.01"
+                            type="number" id="precio" name="precio"
+                            value={formData.precio} onChange={handleChange}
+                            min="0" step="0.01"
+                            className={errores.precio ? "error-input" : ""}
                         />
-                        {errores.precio && <p style={estiloError}>{errores.precio}</p>}
+                        {errores.precio && <span className="error-msg">{errores.precio}</span>}
                     </div>
 
-                    {/* Deshabilita el botón mientras se envía para evitar doble submit */}
-                    <button type="submit" disabled={cargando}>
-                        {cargando ? "Guardando..." : "Agregar"}
-                    </button>
-
+                    <div className="acciones-formulario">
+                        <button type="submit" className="btn btn-primario" disabled={cargando}>
+                            {cargando ? "Guardando..." : "Agregar"}
+                        </button>
+                    </div>
                 </form>
             </div>
-        </>
+        </div>
     );
 };
 
