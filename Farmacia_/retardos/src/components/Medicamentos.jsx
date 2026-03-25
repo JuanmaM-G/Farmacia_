@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Edit_medi from "./Edit_medi";
+import UD_medi from "./UD_medi";
 
 
 const Medicamentos = () => {
@@ -37,7 +37,7 @@ const Medicamentos = () => {
 
     if (medicamentoEditar) {
         return (
-            <Edit_medi
+            <UD_medi
                 medicamento={medicamentoEditar}
                 onVolver={() => { setMedicamentoEditar(null); fetchMedicamentos(busqueda); }}
             />

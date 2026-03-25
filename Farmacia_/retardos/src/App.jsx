@@ -1,6 +1,6 @@
 import Medicamentos from "./components/medicamentos";
 import AG_medi from "./components/AG_medi";
-import "../farmacia.css";
+import "./components/farmacia.css"
 
 function App() {
   return (

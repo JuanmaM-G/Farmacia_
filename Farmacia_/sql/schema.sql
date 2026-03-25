@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS farmacia;
 create user if not exists 'recu'@'localhost' identified by 'password';
 GRANT ALL PRIVILEGES ON farmacia.* TO 'recu'@'localhost';
 
-FLUSH PRIVILEGES;
+-- FLUSH PRIVILEGES;
 
 USE farmacia;
 
